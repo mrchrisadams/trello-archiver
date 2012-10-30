@@ -6,6 +6,7 @@ require 'rubygems'
 require 'simple_xlsx'
 require 'yaml'
 require_relative 'filewriter'
+require_relative 'csv_writer'
 
 include Trello
 include Trello::Authorization
@@ -19,6 +20,39 @@ OAuthPolicy.consumer_credential = credential
 
 OAuthPolicy.token = OAuthCredential.new CONFIG['access_token_key'], nil
 
+def ask_format board, filename
+	puts "What format would you prefer?"
+  format = gets.downcase.chomp
+  case format
+    when "csv"
+      puts "using csv"
+      createcsv(board, filename)
+    when "xlsx"
+      puts "using xlsx"
+      createspreadsheet(board, filename)
+    else
+      puts "Please use 'xlsx' or 'csv'"
+      ask_format
+  end
+  
+end
+
+def ask_about_filename board
+
+	puts "Would you like to provide a filename? (y/n)"
+	response = gets.downcase.chomp
+
+	if response.to_s =="y"
+		puts "Enter filename:"
+		filename = gets
+	else
+		filename = board.name.parameterize
+	end
+
+  filename
+
+end
+
 me = Member.find("me")
 boardarray = Array.new
 optionnum = 1
@@ -29,27 +63,22 @@ me.boards.each do |board|
 end
 
 puts "0 - CANCEL\n\n"
+
 puts "Which board would you like to backup?"
 board_to_archive = gets.to_i - 1
 
 board = Board.find(boardarray[board_to_archive].id)
 
 if board_to_archive != -1
-	puts "Would you like to provide a filename? (y/n)"
-	response = gets.downcase.chomp
-  
-	if response.to_s =="y"
-		puts "Enter filename:"
-		filename = gets
-	else
-		filename = board.name.parameterize
-	end
 
+  filename = ask_about_filename(board)
 
 	puts "Preparing to backup #{board.name}"
 	lists = board.lists
 
-  createspreadsheet(board, filename)
+  ask_format(board, filename)
+
 else
 	puts "Cancelling"
 end
+
